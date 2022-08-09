@@ -18,6 +18,8 @@ const adminauth = require('../middleware/adminauth');
 const userModel = require('../models/usermodel');
 const _ = require('underscore');
 const crypt = require('../middleware/crypt');
+const { ObjectID } = require('mongodb');
+const { default: mongoose } = require('mongoose');
 
 //Functions
 async function isNotValidId(Model,id) {
@@ -297,22 +299,7 @@ router.put('/activity/:id',adminauth,async (req,res)=>{
     const activity = await cocurricularactivity.coCurricularActivity.findById(req.params.id);
     console.log(activity);
     if(value === "accepted"){
-        console.log('accepted');
-        if(activity['status'] === 'participated'){
-            console.log(activity['status']);
-        await studentModel.Student.findByIdAndUpdate(activity['student_id'],{
-                $inc : {
-                    "cca.participated":1
-                }
-            })
-        }
-        else{
-            await studentModel.Student.findByIdAndUpdate(activity['student_id'],{
-                $inc : {
-                    "cca.winner":1
-                }
-            })
-        }
+        
     }
     await cocurricularactivity.coCurricularActivity.findOneAndUpdate(
         {_id:req.params.id},
@@ -469,9 +456,15 @@ router.get('/cca/:condition', adminauth,async(req,res)=>{
 
 
 router.get('/cca/std/:std_id',adminauth,async(req,res)=>{
-    cocurricularactivity.coCurricularActivity.find({
-        student_id : req.params.std_id
-    }).populate("student_id",["first_name","last_name","roll_no"])
+    const allCCA =await cocurricularactivity.coCurricularActivity.find().populate({
+        path:"student_id",
+        select : ["std_id","first_name","last_name","roll_no"],
+        populate:{
+            path:"std_id",
+            select : "std_name"
+        }
+    });
+    res.send(allCCA);
 })
 
 router.get('/subjects/unassigned',adminauth, async(req,res)=>{
